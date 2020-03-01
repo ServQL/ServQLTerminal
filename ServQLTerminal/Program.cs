@@ -72,7 +72,7 @@ namespace ServQLTerminal
             string command;
             string cArgs;
             string[] commandSplited;
-            Client.MetaPackage.ResponsePackage response;
+            Client.Package.Response response;
             string prefix = "";
             while (true)
             {
