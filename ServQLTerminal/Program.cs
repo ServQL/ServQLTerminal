@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using SQLiteCLIENT;
+using ServQLClient;
 
 namespace ServQLTerminal
 {
@@ -9,6 +9,14 @@ namespace ServQLTerminal
         public static Connection connection { get; set; }
         public static Client client { get; set; }
 
+        public static void ClearLine()
+        {
+
+            Console.CursorLeft = 0;
+            Console.Write(new String(' ',50));
+            Console.CursorLeft = 0;
+
+        }
         public static string getPassword()
         {
             string result = string.Empty;
@@ -42,20 +50,47 @@ namespace ServQLTerminal
         }
         static void Main(string[] args)
         {
+            bool header = false;
             Console.WriteLine("ServQL Client");
-            if (args.Length == 1) connection = new Connection(args[1]);
+            int cursor = 0;
+            if (args.Length == 1) connection = new Connection(args[0]);
             else
             {
                 Console.Write("IP: ");
                 connection = new Connection(Console.ReadLine());
+                cursor = Console.CursorTop;
+                Console.WriteLine("Connecting...");
             }
-            client = new Client(connection);
-            
+            try
+            {
+                client = new Client(connection);
+
+            }catch(Exception E)
+            {
+                Console.CursorTop = cursor;
+                ClearLine();
+                Console.WriteLine($"Error connecting to {connection.ip}");
+                return;
+            }
             String username = string.Empty;
             string password = string.Empty;
             while (!client.isLoged)
             {
-                connection.Open();
+                try
+                {
+                    connection.Open();
+                }
+                catch (Exception e)
+                {
+                    Console.CursorTop = cursor;
+                    ClearLine();
+                    Console.WriteLine($"Error connecting to {connection.ip}");
+                    return;
+                }
+
+                
+                Console.CursorTop = cursor;
+                ClearLine();
                 Console.Write("Username: ");
                 username = Console.ReadLine();
                 Console.Write("Password: ");
@@ -72,7 +107,7 @@ namespace ServQLTerminal
             string command;
             string cArgs;
             string[] commandSplited;
-            Client.Package.Response response;
+            Package.Response response = null;
             string prefix = "";
             while (true)
             {
@@ -82,7 +117,7 @@ namespace ServQLTerminal
                 {
                     prefix = "exec";
                 }
-                else if(command == "exit")
+                else if (command == "exit")
                 {
                     if (prefix == "") break;
                     else prefix = "";
@@ -91,10 +126,10 @@ namespace ServQLTerminal
                 {
                     if (prefix == "")
                     {
-                    commandSplited = command.Split();
-                    command = commandSplited[0];
-                    cArgs = string.Join(' ', commandSplited);
-                    cArgs = cArgs.Remove(0, command.Length).Trim();
+                        commandSplited = command.Split();
+                        command = commandSplited[0];
+                        cArgs = string.Join(' ', commandSplited);
+                        cArgs = cArgs.Remove(0, command.Length).Trim();
 
                     }
                     else
@@ -102,14 +137,55 @@ namespace ServQLTerminal
                         cArgs = command;
                         command = prefix;
                     }
-                    response = client.sendCommand(command,cArgs);
-                    if (response?.Result == "ERROR" || response == null) Console.WriteLine("ERROR");
+                    switch (command)
+                    {
+                        case "open":
+                            response = client.OpenDb(cArgs);
+                            break;
+                        case "close":
+                            response = client.CloseDb();
+                            break;
+                        case "list":
+                            
+                            if (cArgs == "")
+                            {
+                                header = false;
+                                response = client.GetDBsI();
+
+                            }
+                            else
+                            {
+                            response = client.sendCommand(command, cArgs);
+
+                            }
+                            break;
+                        default:
+                            header = true;
+                             response = client.sendCommand(command, cArgs);
+                            break;
+
+                    }
+                }
+                if (response != null)
+                {
+                    if (response?.Result == "ERROR") Console.WriteLine("ERROR");
                     else
                     {
-                        foreach (string data in response.Data) Console.WriteLine(data);
-                    }
+                        foreach (string[] data in response.Data)
+                        {
+                            Console.WriteLine(String.Join(" , ", data));
+                            if (header)
+                            {
+                                Console.WriteLine(new string('-',data.Length + 2));
+                                header = false;
+                            }
 
+                        }
+                    }
+                    response = null;
                 }
+
+                
             }
 
 
