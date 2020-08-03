@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using SQLiteCLIENT;
+using ServQLClient;
 
 namespace ServQLTerminal
 {
@@ -53,9 +53,18 @@ namespace ServQLTerminal
             
             String username = string.Empty;
             string password = string.Empty;
+            bool repeat = true;
             while (!client.isLoged)
             {
-                connection.Open();
+                try
+                {
+
+                    connection.Open();
+                }catch (Exception e)
+                {
+                    Console.WriteLine("Error connecting ");
+                    System.Environment.Exit(1);
+                }
                 Console.Write("Username: ");
                 username = Console.ReadLine();
                 Console.Write("Password: ");
@@ -72,7 +81,7 @@ namespace ServQLTerminal
             string command;
             string cArgs;
             string[] commandSplited;
-            Client.Package.Response response;
+            Package.Response response;
             string prefix = "";
             while (true)
             {
@@ -81,6 +90,10 @@ namespace ServQLTerminal
                 if (command == "exec" && prefix == "")
                 {
                     prefix = "exec";
+                }
+                else if (command == "clear")
+                {
+                    Console.Clear();
                 }
                 else if(command == "exit")
                 {
@@ -103,10 +116,18 @@ namespace ServQLTerminal
                         command = prefix;
                     }
                     response = client.sendCommand(command,cArgs);
-                    if (response?.Result == "ERROR" || response == null) Console.WriteLine("ERROR");
+                    if (response?.Result == "ERROR" || response == null) Console.WriteLine($"ERROR:{response.Message}");
                     else
                     {
-                        foreach (string data in response.Data) Console.WriteLine(data);
+                        foreach (string[] data in response.Data)
+                        {
+                            foreach(string d in data)
+                            {
+
+                                Console.Write(d + " , ");
+                            }
+                            Console.WriteLine();
+                        }
                     }
 
                 }
