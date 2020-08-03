@@ -62,7 +62,7 @@ namespace ServQLTerminal
                     connection.Open();
                 }catch (Exception e)
                 {
-                    Console.WriteLine("Error connecting ");
+                    Console.WriteLine("Error connecting");
                     System.Environment.Exit(1);
                 }
                 Console.Write("Username: ");
